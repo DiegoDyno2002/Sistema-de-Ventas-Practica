@@ -1,0 +1,175 @@
+# Primeramente voy a importar mis módulos para permitirme trabajar con fechas y los tiempos
+# mi módulo que me va a permitir el acceso a algunas variables y funcionalidades con el sistema.
+import datetime
+import sys
+import tkinter as tk
+
+
+# Función para mostrar un menu principal: En esta función estoy definiendo mi menu principal
+# con las opciones que se le pueden ofrecer al usuario.
+# Se le proporciona una Bienvenida al sistema y le pide que seleccione una opción.
+def main_menu():
+    print("Bienvenido")
+    print("Selecciona una opción:")
+    print("1 - Alta de un producto")
+    print("2 - Compras")
+    print("3 - Ventas")
+    print("4 - Inventario")
+    print("5 - Total de ventas")
+    print("6 - Salir")
+
+
+# Función para leer los productos del archivo de texto:
+#En resumen, la función read_products() lee un archivo 
+# de texto, lo procesa y devuelve un diccionario de Python con los datos leídos del archivo.
+def read_products():
+    products = {}
+    try:
+        with open("productos.txt", "r") as f:
+            lines = f.readlines()
+            for line in lines:
+                parts = line.strip().split(",")
+                products[parts[0]] = {"nombre": parts[1], "cantidad": int(parts[2])}
+    except:
+        pass
+    return products
+
+
+# Función para escribir los productos en el archivo de texto:
+# En resumen, la función write_products() toma un diccionario de Python, va a iterar
+# sobre sus elementos y los va a escribir en un archivo de texto.
+def write_products(products):
+    with open("productos.txt", "w") as f:
+        for clave, datos in products.items():
+            f.write(clave + "," + datos["nombre"] + "," + str(datos["cantidad"]) + "\n")
+
+
+# Función para agregar un nuevo producto: 
+# En resumen, la función add_product() solicita información sobre un nuevo producto, 
+# verifica si la clave ya existe en el diccionario de productos y lo agrega si no existe.
+# Luego, actualiza el archivo de texto con el diccionario de productos actualizado y muestra 
+# un mensaje en la consola para confirmar que el producto ha sido agregado correctamente.
+def add_product():    
+    print("Agregar nuevo producto")
+    clave = input("Ingresa la clave del producto: ")
+    nombre = input("Ingresa el nombre del producto: ")
+    cantidad = int(input("Ingresa la cantidad del producto: "))
+    products = read_products()
+    if clave in products:
+        print("La clave de producto ya existe")
+    else:
+        products[clave] = {"nombre": nombre, "cantidad": cantidad}
+        write_products(products)
+        print("Producto agregado correctamente")
+
+
+# Función para realizar una compra:
+# En resumen, la función make_purchase() 
+# solicita información sobre una compra, verifica si la clave del producto existe en el diccionario
+# de productos y la agrega si existe. Luego, actualiza el archivo de texto con el diccionario de
+# productos actualizado y registra la compra en el archivo "compras.txt", y muestra un mensaje en
+# la consola para confirmar que la compra ha sido registrada correctamente.
+def make_purchase():    
+    print("Realizar una compra")
+    clave = input("Ingresa la clave del producto: ")
+    cantidad = int(input("Ingresa la cantidad comprada: "))
+    precio = float(input("Ingresa el precio de compra por unidad: "))
+    products = read_products()
+    if clave not in products:
+        print("La clave de producto no existe")
+    else:
+        products[clave]["cantidad"] += cantidad
+        write_products(products)
+        fecha = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        total = cantidad * precio
+        with open("compras.txt", "a") as f:
+            f.write(clave + "," + products[clave]["nombre"] + "," + str(cantidad) + "," + str(precio) + "," + str(total) + "," + fecha + "\n")
+        print("Compra registrada correctamente")
+
+
+# Función para realizar una venta:
+# make_sale() solicita información sobre una venta, verifica si la clave del producto
+# existe en el diccionario de productos y la cantidad vendida es menor o igual a la cantidad
+# disponible en inventario, resta la cantidad vendida del inventario si la venta es posible, 
+# actualiza el archivo de texto con el diccionario de productos actualizado y registra la venta 
+# en el archivo "ventas.txt", y muestra un mensaje en la consola para confirmar que la venta ha 
+# sido registrada correctamente.
+def make_sale():    
+    print("Realizar una venta")
+    clave = input("Ingresa la clave del producto: ")
+    cantidad = int(input("Ingresa la cantidad vendida: "))
+    precio=float(input("Ingresa el precio"))
+    products = read_products()
+    if clave not in products:
+        print("La clave de producto no existe")
+    elif products[clave]["cantidad"] < cantidad:
+        print("No hay suficiente cantidad de producto en inventario")
+    else:
+        products[clave]["cantidad"] -= cantidad
+        write_products(products)
+        fecha = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        total = cantidad * precio
+        with open("ventas.txt", "a") as f:
+            f.write(clave + "," + products[clave]["nombre"] + "," + str(cantidad) + "," + str(precio) + "," + str(total) + "," + fecha + "\n")
+        print("Venta registrada correctamente")
+
+
+# Función para mostrar el inventario de productos:
+# # muestra una tabla con el inventario de productos, que contiene la 
+# clave, nombre y cantidad de cada producto.
+def show_inventory():    
+    print("Inventario de productos")
+    products = read_products()
+    print("{:<10} {:<20} {:<10}".format("Clave", "Nombre", "Cantidad"))
+    print("=" * 40)
+    for clave, datos in products.items():
+        print("{:<10} {:<20} {:<10}".format(clave, datos["nombre"], datos["cantidad"]))
+
+
+# Función para mostrar el total de ventas por producto:
+# me va permitir leer los datos de la venta en un archivo y los agrupa por produco, mostrando el total 
+# de ventas para cada producto y el gran total acumulado para todos los productos.
+def show_sales():    
+    print("Total de ventas por producto")
+    products = read_products()
+    print("{:<10} {:<10} {:<10}".format("Clave", "Total", "Gran Total"))
+    print("=" * 30)
+    gran_total = 0
+    for clave, datos in products.items():
+        total = 0
+        with open("ventas.txt", "r") as f:
+            lines = f.readlines()
+            for line in lines:
+                parts = line.strip().split(",")
+                if parts[0] == clave:
+                    total += float(parts[4])
+        gran_total += total
+        print("{:<10} {:<10} {:<10}".format(clave, total,gran_total))
+
+
+# Función principal:
+# Va a permitir que el usuario pueda interactuar con el programa a través de la consola.
+def main():
+    while True:
+        main_menu()
+        opcion = input("Ingresa una opción: ")
+        if opcion == "1":
+            add_product()
+        elif opcion == "2":
+            make_purchase()
+        elif opcion == "3":
+            make_sale()
+        elif opcion == "4":
+            show_inventory()
+        elif opcion == "5":
+            show_sales()
+        elif opcion == "6":
+            break
+        input("Presiona Enter para continuar...")
+
+# Llamada a la función principal:
+# me va permitir verificar si el script está siendo ejecutado directamente o 
+# si fue importado como módulo a otro script de Python.
+if __name__ == "__main__":
+    main()
+   
